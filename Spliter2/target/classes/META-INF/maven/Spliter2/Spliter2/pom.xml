@@ -1,0 +1,104 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>Spliter2</groupId>
+  <artifactId>Spliter2</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  
+  <properties>
+		<maven.compiler.target>11</maven.compiler.target>
+		<maven.compiler.source>11</maven.compiler.source>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>org.apache.camel</groupId>
+			<artifactId>camel-core</artifactId>
+			<version>3.16.0</version>
+		</dependency>
+		<dependency>
+    <groupId>org.apache.camel</groupId>
+    <artifactId>camel-core-processor</artifactId>
+    <version>3.16.0</version>
+</dependency>
+
+		<dependency>
+			<groupId>org.apache.camel</groupId>
+			<artifactId>camel-quartz</artifactId>
+			<version>3.16.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel</groupId>
+			<artifactId>camel-spring-main</artifactId>
+			<version>3.16.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel</groupId>
+			<artifactId>camel-spring-xml</artifactId>
+			<version>3.16.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>1.7.5</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel</groupId>
+			<artifactId>camel-management</artifactId>
+			<version>3.16.0</version>
+		</dependency>
+		
+		    <dependency>
+        <groupId>org.apache.camel</groupId>
+        <artifactId>camel-jsonpath</artifactId>
+        <version>3.16.0</version> <!-- Make sure this matches your Camel version -->
+    </dependency>
+<dependency>
+    <groupId>net.minidev</groupId>
+    <artifactId>json-smart</artifactId>
+    <version>2.4.7</version>
+</dependency>
+
+		
+		    <dependency>
+        <groupId>org.apache.camel</groupId>
+        <artifactId>camel-jackson</artifactId>
+        <version>3.16.0</version> <!-- Ensure this matches your Camel version -->
+    </dependency>
+
+    <!-- Jackson Dependencies -->
+    <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>2.12.5</version> <!-- Ensure you're using a compatible version -->
+    </dependency>
+
+	</dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>io.hawt</groupId>
+				<artifactId>hawtio-maven-plugin</artifactId>
+				<version>2.17.1</version>
+				<goals>
+					<goal>camel</goal>
+				</goals>
+				<configuration>
+					<logClasspath>true</logClasspath>
+<!--					<mainClass>org.apache.camel.spring.Main.Installer</mainClass>-->
+<!--					<port>8080</port>-->
+<!--					<context>hawtio</context>-->
+<!--					<openWebConsoleDelay>1</openWebConsoleDelay>-->
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.camel</groupId>
+				<artifactId>camel-maven-plugin</artifactId>
+				<version>3.16.0</version>
+				<configuration>
+					<logClasspath>true</logClasspath>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>

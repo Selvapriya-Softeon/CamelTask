@@ -1,0 +1,38 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+    <camelContext xmlns="http://camel.apache.org/schema/spring">
+
+        <route id="inputRoute">
+            <from uri="file:input/?fileName=data.json&amp;noop=true" />
+            <unmarshal>
+                <json library="Jackson" />
+            </unmarshal>
+
+            <split>
+                <simple>${body[data][items]}</simple>
+                <process ref="itemProcessor" />
+                <setProperty name="uniqueIds">
+                    <method ref="itemProcessor" method="getUniqueIds" />
+                </setProperty>
+                <log message="WorkListId: ${body}" />
+                
+            </split>
+
+            <to uri="log:final?showAll=true" />
+        </route>
+        
+
+        <route id="logUniqueItems">
+            <from uri="timer:logUniqueIds?repeatCount=1&amp;delay=5000" />
+            <bean ref="itemProcessor" method="getUniqueIds" />
+            <log message="All Unique IDs: ${body}" />
+        </route>
+
+    </camelContext>
+
+    <bean id="itemProcessor" class="Spliter2.ItemProcessor" />
+</beans>
