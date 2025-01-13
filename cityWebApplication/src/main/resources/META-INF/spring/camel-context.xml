@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+    <bean id="dataSource" class="oracle.jdbc.pool.OracleDataSource">
+        <property name="user" value="s241oradev" />
+        <property name="password" value="s241oradev" />
+        <property name="URL" value="jdbc:oracle:thin:@//192.1.2.45:1521/elite19c" />
+    </bean>
+
+    <camelContext xmlns="http://camel.apache.org/schema/spring">
+
+        <restConfiguration component="netty-http" bindingMode="json" host="0.0.0.0" port="8080">
+        </restConfiguration>
+
+        <rest path="/cities">
+
+            <get>
+                <param name="name" type="path" description="City name" dataType="string" required="true"/>
+                <to uri="direct:getCities"/>
+            </get>
+
+            <post>
+                <param name="body" type="body" description="City data" dataType="json" required="true"/>
+                <to uri="direct:addCity"/>
+            </post>
+
+            <get path="/{name}">
+                <param name="name" type="path" description="City name" dataType="string" required="true"/>
+                <to uri="direct:getCityByName"/>
+            </get>
+            
+            <put path="/{name}">
+                <param name="name" type="path" description="City name" dataType="string" required="true"/>
+                <param name="body" type="body" description="City data" dataType="json" required="true"/>
+                <to uri="direct:updateCity"/>
+            </put>
+            
+            <delete path="/{name}">
+                <param name="name" type="path" description="City name" dataType="string" required="true"/>
+                <to uri="direct:deleteCity"/>
+            </delete>
+            
+        </rest>
+
+        <route id="getCities">
+            <from uri="direct:getCities"/>
+            <to uri="sql:SELECT * FROM Luca_Cities?dataSource=#dataSource"/>
+            <to uri="log:Luca_Cities?level=INFO&amp;showAll=true" />
+            <convertBodyTo type="java.util.List"/>
+        </route>
+
+        <route id="addCity">
+            <from uri="direct:addCity"/>
+            <to uri="sql:INSERT INTO Luca_Cities (name, population) VALUES (:#name, :#population)?dataSource=#dataSource"/>
+            <to uri="log:Luca_Cities?level =INFO&amp;showAll=true" />
+            <setBody>
+                <simple>{"status": "City added successfully"}</simple>
+            </setBody>
+        </route>
+        
+        <route id="getCityByName">
+            <from uri="direct:getCityByName"/>
+            <to uri="sql:SELECT * FROM Luca_Cities WHERE name=:#name?dataSource=#dataSource"/>
+            <to uri="log:Luca_Cities?level=INFO&amp;showAll=true" />
+            <convertBodyTo type="java.util.List"/>
+        </route>
+
+        <route id="updateCity">
+            <from uri="direct:updateCity"/>
+            <to uri="sql:UPDATE Luca_Cities SET population=:#population WHERE name=:#name?dataSource=#dataSource"/>
+            <to uri="log:Luca_Cities?level=INFO&amp;showAll=true" />
+            <setBody>
+                <simple>{"status": "City updated successfully"}</simple>
+            </setBody>
+        </route>
+        
+        <route id="deleteCity">
+            <from uri="direct:deleteCity"/>
+            <to uri="sql:DELETE FROM Luca_Cities WHERE name=:#name?dataSource=#dataSource"/>
+            <to uri="log:Luca_Cities?level=INFO&amp;showAll=true" />
+            <setBody>
+                <simple>{"status": "City deleted successfully"}</simple>
+            </setBody>
+        </route>
+        
+    </camelContext>
+
+</beans>
