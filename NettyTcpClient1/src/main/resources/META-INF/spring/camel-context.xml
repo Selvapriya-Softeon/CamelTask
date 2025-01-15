@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://camel.apache.org/schema/spring 
+           http://camel.apache.org/schema/spring/camel-spring.xsd"> 
+
+  <camelContext xmlns="http://camel.apache.org/schema/spring">
+
+    <!-- Netty TCP Server Route -->
+    <route id="netty-tcp-server">
+        <from uri="netty:tcp://0.0.0.0:8080?sync=true"/>
+        
+        <!-- Processor to handle incoming messages -->
+        <process ref="messageProcessor"/>
+        
+        <!-- Response sent back to the client -->
+        <setBody>
+            <simple>Response from server: Processed ${body}</simple>
+        </setBody>
+    </route>
+
+    <!-- Netty TCP Client Route (for testing) -->
+    <route id="netty-tcp-client">
+        <from uri="timer:tcpClient?period=5000"/>
+        
+        <!-- Message sent to the server -->
+        <setBody>
+            <constant>Hello from Apache Camel Netty client!</constant>
+        </setBody>
+        
+        <!-- Sending request to the server -->
+        <to uri="netty:tcp://localhost:8080?sync=true"/>
+        
+        <!-- Log the server's response -->
+        <to uri="log:response"/>
+    </route>
+
+  </camelContext>
+
+  <!-- Bean Definition for Message Processor -->
+  <bean id="messageProcessor" class="NettyTcpClient1.MyMessageProcessor"/>
+
+</beans>
