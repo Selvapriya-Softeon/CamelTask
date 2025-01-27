@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:camel="http://camel.apache.org/schema/spring"
        xsi:schemaLocation="
        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
@@ -13,11 +14,32 @@
 
     <camelContext xmlns="http://camel.apache.org/schema/spring">
 
+	<onException>
+	    <exception>java.sql.SQLException</exception>
+	    <handled>
+	        <constant>true</constant>
+	    </handled>
+	    <log message="SQL Exception occurred: ${exception.message}" loggingLevel="ERROR"/>
+	    <setBody>
+	        <simple>{"status": "error", "message": "A database error occurred: ${exception.message}"}</simple>
+	    </setBody>
+	</onException>
+
+      <onException>
+          <exception>java.lang.Exception</exception>
+          <handled>
+              <constant>true</constant>
+          </handled>
+          <log message="An unexpected error occurred: ${exception.message}" loggingLevel="ERROR"/>
+          <setBody>
+              <simple>{"status": "error", "message": "An unexpected error occurred. Please try again later."}</simple>
+          </setBody>
+      </onException>
+
         <restConfiguration component="netty-http" bindingMode="json" host="0.0.0.0" port="8080">
         </restConfiguration>
-
+   
         <rest path="/cities">
-
             <get>
                 <param name="name" type="path" description="City name" dataType="string" required="true"/>
                 <to uri="direct:getCities"/>
@@ -48,45 +70,76 @@
 
         <route id="getCities">
             <from uri="direct:getCities"/>
-            <to uri="sql:SELECT * FROM Luca_Cities?dataSource=#dataSource"/>
-            <to uri="log:Luca_Cities?level=INFO&amp;showAll=true" />
-            <convertBodyTo type="java.util.List"/>
+            <doTry>
+                <to uri="sql:SELECT * FROM Luca_Cities?dataSource=#dataSource"/>
+                <to uri="log:Luca_Cities?level=INFO&amp;showAll=true" />
+                <convertBodyTo type="java.util.List"/>
+            
+            <doCatch>
+                <exception>java.sql.SQLException</exception>
+                <log message="SQL error while fetching cities: ${exception.message}" loggingLevel="ERROR"/>
+                <setBody>
+                    <simple>{"status": "error", "message": "Failed to fetch cities"}</simple>
+                </setBody>
+            </doCatch>
+            </doTry>
         </route>
 
         <route id="addCity">
             <from uri="direct:addCity"/>
-            <to uri="sql:INSERT INTO Luca_Cities (name, population) VALUES (:#name, :#population)?dataSource=#dataSource"/>
-            <to uri="log:Luca_Cities?level =INFO&amp;showAll=true" />
-            <setBody>
-                <simple>{"status": "City added successfully"}</simple>
-            </setBody>
+            <doTry>
+                <to uri="sql:INSERT INTO Luca_Cities (name, population) VALUES (:#name, :#population)?dataSource=#dataSource"/>
+                <to uri="log:Luca_Cities?level=INFO&amp;showAll=true" />
+                <setBody>
+                    <simple>{"status": "City added successfully"}</simple>
+                </setBody>
+            <doCatch>
+                <exception>java.sql.SQLException</exception>
+                <log message="SQL error while adding city: ${exception.message}" loggingLevel="ERROR"/>
+                <setBody>
+                    <simple>{"status": "error", "message": "Failed to add city"}</simple>
+                </setBody>
+            </doCatch>
+           </doTry>
+            
         </route>
         
-        <route id="getCityByName">
-            <from uri="direct:getCityByName"/>
-            <to uri="sql:SELECT * FROM Luca_Cities WHERE name=:#name?dataSource=#dataSource"/>
-            <to uri="log:Luca_Cities?level=INFO&amp;showAll=true" />
-            <convertBodyTo type="java.util.List"/>
-        </route>
-
-        <route id="updateCity">
-            <from uri="direct:updateCity"/>
-            <to uri="sql:UPDATE Luca_Cities SET population=:#population WHERE name=:#name?dataSource=#dataSource"/>
-            <to uri="log:Luca_Cities?level=INFO&amp;showAll=true" />
-            <setBody>
-                <simple>{"status": "City updated successfully"}</simple>
-            </setBody>
-        </route>
-        
-        <route id="deleteCity">
-            <from uri="direct:deleteCity"/>
-            <to uri="sql:DELETE FROM Luca_Cities WHERE name=:#name?dataSource=#dataSource"/>
-            <to uri="log:Luca_Cities?level=INFO&amp;showAll=true" />
-            <setBody>
-                <simple>{"status": "City deleted successfully"}</simple>
-            </setBody>
-        </route>
-        
+		<route id="updateCity">
+		    <from uri="direct:updateCity"/>
+		    <doTry>
+		        <to uri="sql:UPDATE Luca_Cities SET population=:#population WHERE name=:#name?dataSource=#dataSource"/>
+		        <to uri="log:Luca_Cities?level=INFO&amp;showAll=true"/>
+		        <setBody>
+		            <simple>{"status": "City updated successfully"}</simple>
+		        </setBody>
+		    
+		    <doCatch>
+		        <exception>java.sql.SQLException</exception>
+		        <log message="SQL error while updating city: ${exception.message}" loggingLevel="ERROR"/>
+		        <setBody>
+		            <simple>{"status": "error", "message": "Failed to update city: ${exception.message}"}</simple>
+		        </setBody>
+		    </doCatch>
+		    </doTry>
+		</route>
+		
+		<route id="deleteCity">
+		    <from uri="direct:deleteCity"/>
+		    <doTry>
+		        <to uri="sql:DELETE FROM Luca_Cities WHERE name=:#name?dataSource=#dataSource"/>
+		        <to uri="log:Luca_Cities?level=INFO&amp;showAll=true"/>
+		        <setBody>
+		            <simple>{"status": "City deleted successfully"}</simple>
+		        </setBody>
+		    <doCatch>
+		        <exception>java.sql.SQLException</exception>
+		        <log message="SQL error while deleting city: ${exception.message}" loggingLevel="ERROR"/>
+		        <setBody>
+		            <simple>{"status": "error", "message": "Failed to delete city: ${exception.message}"}</simple>
+		        </setBody>
+		    </doCatch>
+		   	</doTry>
+		</route>
+		
     </camelContext>
-
 </beans>
