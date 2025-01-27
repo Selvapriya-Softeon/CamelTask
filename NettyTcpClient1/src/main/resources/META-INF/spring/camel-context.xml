@@ -1,13 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:camel="http://camel.apache.org/schema/spring"
        xsi:schemaLocation="
            http://www.springframework.org/schema/beans
            http://www.springframework.org/schema/beans/spring-beans.xsd
-           http://camel.apache.org/schema/spring 
-           http://camel.apache.org/schema/spring/camel-spring.xsd"> 
+           http://camel.apache.org/schema/spring
+           http://camel.apache.org/schema/spring/camel-spring.xsd">
 
-  <camelContext xmlns="http://camel.apache.org/schema/spring">
+  <camelContext xmlns="http://camel.apache.org/schema/spring" id="camelContext">
+    
+    <onException>
+        <exception>java.net.ConnectException</exception>
+        <redeliveryPolicy maximumRedeliveries="5" redeliveryDelay="2000"/>
+        <handled>
+            <constant>true</constant>
+        </handled>
+        <log message="Connection failed to server: ${exception.message}" loggingLevel="ERROR"/>
+        <to uri="direct:handleConnectException"/>
+    </onException>
+
+    <onException>
+        <exception>java.io.IOException</exception>
+        <redeliveryPolicy maximumRedeliveries="3" redeliveryDelay="1000"/>
+        <handled>
+            <constant>true</constant>
+        </handled>
+        <log message="IO exception encountered: ${exception.message}" loggingLevel="ERROR"/>
+        <to uri="direct:handleIOException"/>
+    </onException>
 
     <route id="netty-tcp-server">
         <from uri="netty:tcp://0.0.0.0:8080?sync=true"/>
@@ -22,18 +43,41 @@
     <route id="netty-tcp-client">
         <from uri="timer:tcpClient?period=5000"/>
         
-        <!-- Message sent to the server -->
         <setBody>
             <constant>Hello from Apache Camel Netty client!</constant>
         </setBody>
         
-        <to uri="netty:tcp://localhost:8080?sync=true"/>
+        <doTry>
+            <to uri="netty:tcp://localhost:8080?sync=true"/>
+            <to uri="log:response"/>
         
-        <to uri="log:response"/>
+        <doCatch>
+            <exception>java.net.ConnectException</exception>
+            <log message="Failed to connect to the server. Skipping message..." loggingLevel="WARN"/>
+        </doCatch>
+        </doTry>
+    </route>
+
+    <route id="handleConnectException">
+        <from uri="direct:handleConnectException"/>
+        <log message="Handling ConnectException in custom route" loggingLevel="INFO"/>
+        <setBody>
+            <constant>Server is currently unavailable. Please try again later.</constant>
+        </setBody>
+    </route>
+
+    <route id="handleIOException">
+        <from uri="direct:handleIOException"/>
+        <log message="Handling IOException in custom route" loggingLevel="INFO"/>
+        <setBody>
+            <constant>There was an error processing your request. Please try again later.</constant>
+        </setBody>
     </route>
 
   </camelContext>
+  
+    <bean id="messageProcessor" class="NettyTcpClient1.MyMessageProcessor"/>
 
-  <bean id="messageProcessor" class="NettyTcpClient1.MyMessageProcessor"/>
-
-</beans>
+  
+  </beans>
+  
