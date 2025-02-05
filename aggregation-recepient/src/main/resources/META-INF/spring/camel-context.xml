@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+    <bean id="aggregatorStrategy" class="com.camel.aggregation.aggregation_recepient.MyAggregationStrategy"/>
+
+    <camelContext xmlns="http://camel.apache.org/schema/spring">
+
+        <route id="clientRoute">
+            <from uri="direct:start"/>
+               <setHeader name="myHeader">
+        <constant>direct:service1,direct:service2</constant>
+    </setHeader>
+
+    <recipientList parallelProcessing="true">
+        <header>myHeader</header>
+    </recipientList>
+
+              <aggregate aggregationStrategy="aggregatorStrategy">
+                <correlationExpression>
+                    <constant>true</constant>
+                </correlationExpression>
+                <completionSizeExpression>
+                    <constant>2</constant>
+                </completionSizeExpression>
+                <log message="Aggregated Response: ${body}"/>
+            </aggregate>
+
+        </route>
+
+        <route id="service1Route">
+            <from uri="direct:service1"/>
+            <setBody>
+                <simple>{"service1":"Response from Service 1"}</simple>
+            </setBody>
+            <log message="Service 1 Response: ${body}"/>
+        </route>
+
+        <route id="service2Route">
+            <from uri="direct:service2"/>
+            <setBody>
+                <simple>{"service2":"Response from Service 2"}</simple>
+            </setBody>
+            <log message="Service 2 Response: ${body}"/>
+        </route>
+
+    </camelContext>
+</beans>
